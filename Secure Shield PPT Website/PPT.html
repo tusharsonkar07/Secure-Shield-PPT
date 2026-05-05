@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Shield — Hybrid Endpoint Protection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+    theme: {
+        extend: {
+            fontFamily: { sans: ['Inter','sans-serif'], mono: ['JetBrains Mono','monospace'] }
+        }
+    }
+}
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        :root {
+            --bg: #0B0E17;
+            --bg2: #141927;
+            --txt: #F1F5F9;
+            --txt2: #94A3B8;
+            --muted: #475569;
+            --em: #10B981;
+            --neon: #38BDF8;
+            --rose: #EF4444;
+            --amber: #FBBF24;
+            --border: rgba(255, 255, 255, 0.06)
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--txt);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(rgba(56, 189, 248, 0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.018) 1px, transparent 1px);
+            background-size: 64px 64px;
+            pointer-events: none;
+            z-index: 0
+        }
+
+        .vignette {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.5) 100%);
+            pointer-events: none;
+            z-index: 1
+        }
+
+        #particles {
+            position: fixed;
+            inset: 0;
+            z-index: 0
+        }
+
+        #progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--em), var(--neon));
+            transition: width .5s cubic-bezier(.4, 0, .2, 1);
+            z-index: 200;
+            border-radius: 0 1px 1px 0
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 48px 72px 72px;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity .55s cubic-bezier(.4, 0, .2, 1), transform .55s cubic-bezier(.4, 0, .2, 1);
+            pointer-events: none;
+            z-index: 10
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.025);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 12px
+        }
+
+        .glass-strong {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px
+        }
+
+
+
+
+
+        
+
+
+
+        .perf-bar:hover {
+            transform: scaleY(1.05);
+            filter: brightness(1.2);
+        }
+
+        
+        .perf-bar {
+            height: 0;
+            border-radius: 6px 6px 0 0;
+            transition: height 1s ease;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        .slide-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .6rem;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+            color: var(--muted)
+        }
+
+        .glow-em {
+            box-shadow: 0 0 28px rgba(16, 185, 129, .1), inset 0 1px 0 rgba(16, 185, 129, .08)
+        }
+
+        .glow-neon {
+            box-shadow: 0 0 28px rgba(56, 189, 248, .1), inset 0 1px 0 rgba(56, 189, 248, .08)
+        }
+
+        .glow-rose {
+            box-shadow: 0 0 28px rgba(239, 68, 68, .1), inset 0 1px 0 rgba(239, 68, 68, .08)
+        }
+
+        .icon-box {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .8rem;
+            flex-shrink: 0
+        }
+
+        .baton {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .6rem;
+            letter-spacing: .1em;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .baton i {
+            color: var(--em);
+            font-size: .45rem
+        }
+
+        .feat-cell {
+            background: rgba(56, 189, 248, .07);
+            border: 1px solid rgba(56, 189, 248, .18);
+            padding: 5px 9px;
+            border-radius: 5px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .72rem;
+            color: var(--neon)
+        }
+
+        .nav-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--muted);
+            transition: all .3s ease;
+            cursor: pointer
+        }
+
+        .nav-dot.active {
+            background: var(--em);
+            box-shadow: 0 0 10px rgba(16, 185, 129, .35);
+            width: 22px;
+            border-radius: 3px
+        }
+
+        @keyframes dash-flow {
+            to {
+                stroke-dashoffset: -20
+            }
+        }
+
+        .flow-dot {
+            animation: pulse-glow 1.5s ease-in-out infinite
+        }
+
+        .dash-anim {
+            animation: dash-flow .8s linear infinite
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-8px)
+            }
+        }
+
+        .float-slow {
+            animation: float 6s ease-in-out infinite
+        }
+
+        .float-med {
+            animation: float 4s ease-in-out infinite
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            .slide {
+                transition: opacity .2s ease;
+                transform: none !important
+            }
+
+            .flow-dot,
+            .dash-anim,
+            .float-slow,
+            .float-med {
+                animation: none
+            }
+
+            .perf-bar {
+                transition: none
+            }
+        }
+
+        ::-webkit-scrollbar {
+            display: none
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: .65rem;
+            font-weight: 600;
+            letter-spacing: .04em
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Background layers -->
+    <canvas id="particles"></canvas>
+    <div class="grid-bg"></div>
+    <div class="vignette"></div>
+
+    <!-- Progress bar -->
+    <div id="progress" style="width:8.33%"></div>
+
+    <!-- ===================== SLIDE 1: TITLE ===================== -->
+    <section class="slide active" data-slide="0">
+        <div class="absolute top-8 left-[72px] slide-label">Final Year B.Tech Project</div>
+        <div class="absolute top-8 right-[72px] slide-label">2025 — 2026</div>
+
+        <!-- Decorative shield shape -->
+        <div class="absolute opacity-[0.03] pointer-events-none"
+            style="top:50%;left:50%;transform:translate(-50%,-50%);width:520px;height:520px;">
+            <svg viewBox="0 0 200 220" fill="none">
+                <path d="M100 10 L185 55 L185 130 Q185 190 100 215 Q15 190 15 130 L15 55 Z" stroke="#38BDF8"
+                    stroke-width="0.5" />
+            </svg>
+        </div>
+
+        <div class="text-center relative z-10">
+            <div class="flex items-center justify-center gap-3 mb-5">
+                <div class="w-8 h-px bg-gradient-to-r from-transparent to-emerald-500/50"></div>
+                <span class="slide-label" style="color:var(--em)">AI-Driven Hybrid Cyber
+Threat Detection System</span>
+                <div class="w-8 h-px bg-gradient-to-l from-transparent to-emerald-500/50"></div>
+            </div>
+            <h1 class="text-6xl font-black tracking-tight leading-none mb-3" style="letter-spacing:-0.03em">SECURE
+                <span class="text-emerald-400">SHIELD</span></h1>
+            <p class="text-base font-light text-slate-400 max-w-xl mx-auto mb-10 leading-relaxed">Unsupervised Anomaly
+                Detection for Lightweight,<br>Privacy-Preserving Endpoint Defense</p>
+            <div class="w-12 h-px bg-white/10 mx-auto mb-8"></div>
+            <div class="flex items-center justify-center gap-1 flex-wrap">
+                <span class="text-sm font-medium text-slate-300">Sheebu</span>
+                <span class="text-slate-600 mx-2">&middot;</span>
+                <span class="text-sm font-medium text-slate-300">Tushar</span>
+                <span class="text-slate-600 mx-2">&middot;</span>
+                <span class="text-sm font-medium text-slate-300">Raghav</span>
+                <span class="text-slate-600 mx-2">&middot;</span>
+                <span class="text-sm font-medium text-slate-300">Shashank</span>
+                <span class="text-slate-600 mx-2">&middot;</span>
+                <span class="text-sm font-medium text-slate-300">Vaibhav</span>
+            </div>
+        </div>
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 baton"><i class="fa-solid fa-chevron-right"></i> Press
+            arrow key or click to navigate</div>
+    </section>
+
+    <!-- ===================== SLIDE 2: GAP ANALYSIS ===================== -->
+    <section class="slide" data-slide="1">
+        <div class="absolute top-8 left-[72px] slide-label">02 — The Gap</div>
+        <div class="absolute top-8 right-[72px] slide-label">Problem Framing</div>
+        <h2 class="text-2xl font-bold tracking-tight mb-1">Why Traditional EDR Falls Short</h2>
+        <p class="text-sm text-slate-500 mb-8">A fundamental mismatch between enterprise requirements and endpoint
+            realities</p>
+        <div class="flex items-stretch gap-6 max-w-4xl w-full">
+            <!-- Traditional EDR -->
+            <div class="glass flex-1 p-6 relative overflow-hidden" style="border-color:rgba(239,68,68,0.12)">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-rose-500/60 to-transparent"></div>
+                <div class="icon-box bg-rose-500/10 text-rose-400 mb-4"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3 class="text-base font-semibold text-rose-400 mb-4">Traditional EDR</h3>
+                <ul class="space-y-3">
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-xmark text-rose-500/60 mt-1 text-xs"></i><span class="text-sm text-slate-400 leading-relaxed">High CPU/Memory footprint — degrades user experience</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-xmark text-rose-500/60 mt-1 text-xs"></i><span class="text-sm text-slate-400 leading-relaxed">Cloud-dependent processing — fails offline</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-xmark text-rose-500/60 mt-1 text-xs"></i><span class="text-sm text-slate-400 leading-relaxed">Full system-level access required — privacy risk</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-xmark text-rose-500/60 mt-1 text-xs"></i><span class="text-sm text-slate-400 leading-relaxed">Deep packet inspection — invasive data collection</span>
+                    </li>
+                </ul>
+            </div>
+            <!-- VS divider -->
+            <div class="flex flex-col items-center justify-center gap-2 flex-shrink-0">
+                <div class="w-px h-12 bg-white/5"></div>
+                <span class="text-xs font-mono text-slate-600">VS</span>
+                <div class="w-px h-12 bg-white/5"></div>
+            </div>
+            <!-- Secure Shield -->
+            <div class="glass flex-1 p-6 relative overflow-hidden glow-em" style="border-color:rgba(16,185,129,0.12)">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-500/60 to-transparent">
+                </div>
+                <div class="icon-box bg-emerald-500/10 text-emerald-400 mb-4"><i class="fa-solid fa-bolt"></i></div>
+                <h3 class="text-base font-semibold text-emerald-400 mb-4">Secure Shield</h3>
+                <ul class="space-y-3">
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-check text-emerald-500/70 mt-1 text-xs"></i><span class="text-sm text-slate-300 leading-relaxed">&lt;2% CPU utilization — zero perceptible overhead</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-check text-emerald-500/70 mt-1 text-xs"></i><span class="text-sm text-slate-300 leading-relaxed">Local-first inference pipeline — autonomous operation</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-check text-emerald-500/70 mt-1 text-xs"></i><span class="text-sm text-slate-300 leading-relaxed">Abstracted feature extraction — no raw data exposure</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i class="fa-solid fa-check text-emerald-500/70 mt-1 text-xs"></i><span class="text-sm text-slate-300 leading-relaxed">Zero raw data exfiltration — privacy by architecture</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="absolute bottom-8 right-[72px] baton">
+            <span>Next: System Architecture</span><i class="fa-solid fa-chevron-right"></i></div>
+    </section>
+
+    <!-- ===================== SLIDE 3: ARCHITECTURE ===================== -->
+    <section class="slide" data-slide="2">
+        <div class="absolute top-8 left-[72px] slide-label">03 — Architecture</div>
+        <div class="absolute top-8 right-[72px] slide-label">Master Diagram</div>
+        <h2 class="text-2xl font-bold tracking-tight mb-1">Three-Tier Hybrid Pipeline</h2>
+        <p class="text-sm text-slate-500 mb-8">Edge inference meets cloud aggregation meets centralized visibility</p>
+        <div class="flex items-center justify-center gap-0 max-w-5xl w-full">
+            <!-- Tier 1: Endpoint -->
+            <div class="glass-strong p-5 w-64 text-center relative">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-sky-400/50 to-sky-400/10"></div>
+                <div class="icon-box bg-sky-400/10 text-sky-400 mx-auto mb-3"><i class="fa-solid fa-desktop"></i></div>
+                <h3 class="text-sm font-semibold mb-1">Windows Endpoint</h3>
+                <p class="text-xs text-slate-500 mb-3 font-mono">Python Agent</p>
+                <div class="space-y-1.5 text-left">
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400/50"></span>win32evtlog Parsing</div>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400/50"></span>psutil Metrics</div>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400/50"></span>Local ML Inference</div>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400/50"></span>Auto-Remediation</div>
+                </div>
+            </div>
+            <!-- Arrow 1 -->
+            <div class="relative w-28 flex-shrink-0 mx-2">
+                <div class="absolute top-1/2 left-0 right-6 h-px"
+                    style="background:linear-gradient(90deg,rgba(56,189,248,0.1),rgba(56,189,248,0.5))"></div>
+                <div
+                    class="absolute top-1/2 right-5 -translate-y-1/2 w-0 h-0 border-l-[7px] border-l-sky-400 border-y-[4px] border-y-transparent">
+                </div>
+                <div class="absolute top-1/2 left-4 -translate-y-1/2 w-2 h-2 rounded-full bg-sky-400 flow-dot"></div>
+                <span class="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[0.55rem] font-mono text-slate-600 whitespace-nowrap">REST API</span>
+            </div>
+            <!-- Tier 2: Cloud -->
+            <div class="glass-strong p-5 w-64 text-center relative">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-400/50 to-emerald-400/10">
+                </div>
+                <div class="icon-box bg-emerald-400/10 text-emerald-400 mx-auto mb-3"><i class="fa-solid fa-server"></i>
+                </div>
+                <h3 class="text-sm font-semibold mb-1">Cloud Server</h3>
+                <p class="text-xs text-slate-500 mb-3 font-mono">FastAPI</p>
+                <div class="space-y-1.5 text-left">
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400/50"></span>Aggregation Engine</div>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400/50"></span>Model Management</div>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400/50"></span>Policy Distribution</div>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/50"></span>MongoDB Storage</div>
+                </div>
+            </div>
+            <!-- Arrow 2 -->
+            <div class="relative w-28 flex-shrink-0 mx-2">
+                <div class="absolute top-1/2 left-0 right-6 h-px"
+                    style="background:linear-gradient(90deg,rgba(56,189,248,0.1),rgba(56,189,248,0.5))"></div>
+                <div
+                    class="absolute top-1/2 right-5 -translate-y-1/2 w-0 h-0 border-l-[7px] border-l-sky-400 border-y-[4px] border-y-transparent">
+                </div>
+                <div class="absolute top-1/2 left-4 -translate-y-1/2 w-2 h-2 rounded-full bg-sky-400 flow-dot"
+                    style="animation-delay:.5s"></div>
+                <span class="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[0.55rem] font-mono text-slate-600 whitespace-nowrap">REST / WS</span>
+            </div>
+            <!-- Tier 3: Dashboard -->
+            <div class="glass-strong p-5 w-64 text-center relative">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-400/50 to-amber-400/10">
+                </div>
+                <div class="icon-box bg-amber-400/10 text-amber-400 mx-auto mb-3"><i class="fa-solid fa-chart-line"></i>
+                </div>
+                <h3 class="text-sm font-semibold mb-1">Admin Dashboard</h3>
+                <p class="text-xs text-slate-500 mb-3 font-mono">React SPA</p>
+                <div class="space-y-1.5 text-left">
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/50"></span>Risk Gauge Display</div>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/50"></span>Threat Timeline</div>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/50"></span>Agent Health Map</div>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/50"></span>Remediation Logs</div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-8 right-[72px] baton">
+            <span>Next: Sheebu — Telemetry</span><i class="fa-solid fa-chevron-right"></i></div>
+    </section>
+
+    <!-- ===================== SLIDE 4: SHEEBU ===================== -->
+    <section class="slide" data-slide="3">
+        <div class="absolute top-8 left-[72px] slide-label">04 — Telemetry Lead</div>
+        <div class="absolute top-8 right-[72px] slide-label">Sheebu</div>
+        <div class="flex items-start gap-3 mb-2">
+            <div class="icon-box bg-sky-400/10 text-sky-400"><i class="fa-solid fa-satellite-dish"></i></div>
+            <div>
+                <h2 class="text-2xl font-bold tracking-tight">Privacy-Preserving Telemetry Extraction</h2>
+                <p class="text-sm text-slate-500 mt-0.5">Raw collection with zero data exposure</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-8 max-w-5xl w-full mt-6">
+            <!-- Flowchart -->
+            <div class="flex-1">
+                <div class="flex items-center gap-2 flex-wrap justify-center">
+                    <div class="glass px-4 py-2.5 text-center">
+                        <div class="text-[0.6rem] text-slate-500 font-mono mb-0.5">SOURCE</div>
+                        <div class="text-xs font-medium">Raw Event Logs</div>
+                    </div>
+                    <div class="relative w-10 flex-shrink-0">
+                        <div class="absolute top-1/2 left-0 right-3 h-px bg-sky-400/30"></div>
+                        <div
+                            class="absolute top-1/2 right-2 -translate-y-1/2 w-0 h-0 border-l-[5px] border-l-sky-400/50 border-y-[3px] border-y-transparent">
+                        </div>
+                    </div>
+                    <div class="glass px-4 py-2.5 text-center" style="border-color:rgba(239,68,68,0.15)">
+                        <div class="text-[0.6rem] text-rose-400/60 font-mono mb-0.5">FILTER</div>
+                        <div class="text-xs font-medium">Privacy Strip</div>
+                    </div>
+                    <div class="relative w-10 flex-shrink-0">
+                        <div class="absolute top-1/2 left-0 right-3 h-px bg-sky-400/30"></div>
+                        <div
+                            class="absolute top-1/2 right-2 -translate-y-1/2 w-0 h-0 border-l-[5px] border-l-sky-400/50 border-y-[3px] border-y-transparent">
+                        </div>
+                    </div>
+                    <div class="glass px-4 py-2.5 text-center">
+                        <div class="text-[0.6rem] text-slate-500 font-mono mb-0.5">NORMALIZE</div>
+                        <div class="text-xs font-medium">Feature Extract</div>
+                    </div>
+                    <div class="relative w-10 flex-shrink-0">
+                        <div class="absolute top-1/2 left-0 right-3 h-px bg-emerald-400/30"></div>
+                        <div
+                            class="absolute top-1/2 right-2 -translate-y-1/2 w-0 h-0 border-l-[5px] border-l-emerald-400/50 border-y-[3px] border-y-transparent">
+                        </div>
+                    </div>
+                    <div class="glass-strong px-4 py-2.5 text-center glow-neon">
+                        <div class="text-[0.6rem] text-sky-400/70 font-mono mb-0.5">OUTPUT</div>
+                        <div class="text-xs font-medium text-sky-300">6-D Vector</div>
+                    </div>
+                </div>
+                <!-- Feature vector display -->
+                <div class="flex items-center justify-center gap-1.5 mt-5 flex-wrap">
+                    <span class="text-[0.55rem] font-mono text-slate-600 mr-1">[</span>
+                    <span class="feat-cell">0.82</span>
+                    <span class="feat-cell">0.15</span>
+                    <span class="feat-cell">0.03</span>
+                    <span class="feat-cell">0.91</span>
+                    <span class="feat-cell">0.44</span>
+                    <span class="feat-cell">0.67</span>
+                    <span class="text-[0.55rem] font-mono text-slate-600 ml-1">]</span>
+                </div>
+            </div>
+            <!-- Details -->
+            <div class="w-64 flex-shrink-0 space-y-3">
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400/60"></span><span class="text-xs font-semibold">win32evtlog API</span>
+                    </div>
+                    <p class="text-[0.7rem] text-slate-500 leading-relaxed">Windows Event Log parsing — Security,
+                        System, Application channels</p>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400/60"></span><span class="text-xs font-semibold">psutil Metrics</span>
+                    </div>
+                    <p class="text-[0.7rem] text-slate-500 leading-relaxed">CPU%, memory%, PID count, thread count, open
+                        FDs, boot time delta</p>
+                </div>
+                <div class="glass p-3.5" style="border-color:rgba(239,68,68,0.1)">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400/60"></span><span class="text-xs font-semibold">Privacy Filter</span>
+                    </div>
+                    <p class="text-[0.7rem] text-slate-500 leading-relaxed">Strips usernames, paths, timestamps — only
+                        numeric ratios persist</p>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400/60"></span><span class="text-xs font-semibold">Async Polling</span>
+                    </div>
+                    <p class="text-[0.7rem] text-slate-500 leading-relaxed">Configurable 5-second interval —
+                        non-blocking thread pool</p>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-8 right-[72px] baton">
+            <span>Next: Tushar — ML Inference</span><i class="fa-solid fa-chevron-right"></i></div>
+    </section>
+
+    <!-- ===================== SLIDE 5: TUSHAR ===================== -->
+    <section class="slide" data-slide="4">
+        <div class="absolute top-8 left-[72px] slide-label">05 — ML Engineer</div>
+        <div class="absolute top-8 right-[72px] slide-label">Tushar</div>
+        <div class="flex items-start gap-3 mb-2">
+            <div class="icon-box bg-emerald-400/10 text-emerald-400"><i class="fa-solid fa-brain"></i></div>
+            <div>
+                <h2 class="text-2xl font-bold tracking-tight">Isolation Forest: Unsupervised Scoring</h2>
+                <p class="text-sm text-slate-500 mt-0.5">Anomalous data isolates faster — fewer splits needed</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-10 max-w-5xl w-full mt-6">
+            <!-- Tree Diagram -->
+            <div class="flex-1 flex justify-center">
+                <svg viewBox="0 0 300 210" class="w-full max-w-xs">
+                    <line x1="150" y1="30" x2="75" y2="82" stroke="rgba(56,189,248,0.2)" stroke-width="1.5" />
+                    <line x1="150" y1="30" x2="225" y2="82" stroke="rgba(56,189,248,0.2)" stroke-width="1.5" />
+                    <line x1="75" y1="82" x2="38" y2="145" stroke="rgba(16,185,129,0.25)" stroke-width="1.5" />
+                    <line x1="75" y1="82" x2="112" y2="145" stroke="rgba(239,68,68,0.4)" stroke-width="1.5" />
+                    <line x1="225" y1="82" x2="188" y2="145" stroke="rgba(16,185,129,0.25)" stroke-width="1.5" />
+                    <line x1="225" y1="82" x2="262" y2="145" stroke="rgba(16,185,129,0.25)" stroke-width="1.5" />
+                    <!-- Root -->
+                    <circle cx="150" cy="26" r="15" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)"
+                        stroke-width="1" />
+                    <text x="150" y="30" text-anchor="middle" fill="#94A3B8" font-size="9"
+                        font-family="JetBrains Mono">?</text>
+                    <!-- Level 1 -->
+                    <circle cx="75" cy="82" r="15" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)"
+                        stroke-width="1" />
+                    <text x="75" y="86" text-anchor="middle" fill="#94A3B8" font-size="9"
+                        font-family="JetBrains Mono">?</text>
+                    <circle cx="225" cy="82" r="15" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)"
+                        stroke-width="1" />
+                    <text x="225" y="86" text-anchor="middle" fill="#94A3B8" font-size="9"
+                        font-family="JetBrains Mono">?</text>
+                    <!-- Leaves: Normal -->
+                    <circle cx="38" cy="148" r="15" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.25)"
+                        stroke-width="1" />
+                    <text x="38" y="152" text-anchor="middle" fill="#10B981" font-size="9" font-family="JetBrains Mono"
+                        font-weight="600">N</text>
+                    <circle cx="188" cy="148" r="15" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.25)"
+                        stroke-width="1" />
+                    <text x="188" y="152" text-anchor="middle" fill="#10B981" font-size="9" font-family="JetBrains Mono"
+                        font-weight="600">N</text>
+                    <circle cx="262" cy="148" r="15" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.25)"
+                        stroke-width="1" />
+                    <text x="262" y="152" text-anchor="middle" fill="#10B981" font-size="9" font-family="JetBrains Mono"
+                        font-weight="600">N</text>
+                    <!-- Leaf: Anomalous -->
+                    <circle cx="112" cy="148" r="18" fill="rgba(239,68,68,0.12)" stroke="rgba(239,68,68,0.4)"
+                        stroke-width="1.5" />
+                    <text x="112" y="152" text-anchor="middle" fill="#EF4444" font-size="9" font-family="JetBrains Mono"
+                        font-weight="700">A</text>
+                    <circle cx="112" cy="148" r="24" fill="none" stroke="rgba(239,68,68,0.12)" stroke-width="1">
+                        <animate attributeName="r" values="20;28;20" dur="2s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <!-- Labels -->
+                    <text x="112" y="178" text-anchor="middle" fill="#EF4444" font-size="7" font-family="JetBrains Mono"
+                        letter-spacing="0.05em">ISOLATED EARLY</text>
+                    <text x="38" y="178" text-anchor="middle" fill="#10B981" font-size="7" font-family="JetBrains Mono"
+                        letter-spacing="0.05em">DEEP PATH</text>
+                </svg>
+            </div>
+            <!-- Details -->
+            <div class="w-64 flex-shrink-0 space-y-3">
+                <div class="glass-strong p-4 glow-em">
+                    <div class="text-[0.6rem] font-mono text-emerald-400/60 mb-1">SCORING MODEL</div>
+                    <div class="text-xs font-semibold mb-2">60 / 40 Hybrid Threshold</div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                            <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                                style="width:60%"></div>
+                        </div>
+                        <span class="text-[0.6rem] font-mono text-emerald-400">60%</span>
+                    </div>
+                    <p class="text-[0.65rem] text-slate-500 mt-1.5">Static pre-trained model weight</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <div class="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                            <div class="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400" style="width:40%">
+                            </div>
+                        </div>
+                        <span class="text-[0.6rem] font-mono text-sky-400">40%</span>
+                    </div>
+                    <p class="text-[0.65rem] text-slate-500 mt-1.5">Dynamic runtime adaptation weight</p>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Estimators</span><span class="text-xs font-mono text-slate-300">100</span>
+                    </div>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Contamination</span><span class="text-xs font-mono text-slate-300">0.05</span>
+                    </div>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Inference Latency</span><span class="text-xs font-mono text-emerald-400">&lt;50ms</span>
+                    </div>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Avg Isolation Depth (Anomaly)</span><span class="text-xs font-mono text-rose-400">&le;3 splits</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-8 right-[72px] baton">
+            <span>Next: Raghav — Remediation</span><i class="fa-solid fa-chevron-right"></i></div>
+    </section>
+
+    <!-- ===================== SLIDE 6: RAGHAV ===================== -->
+    <section class="slide" data-slide="5">
+        <div class="absolute top-8 left-[72px] slide-label">06 — Remediation Architect</div>
+        <div class="absolute top-8 right-[72px] slide-label">Raghav</div>
+        <div class="flex items-start gap-3 mb-2">
+            <div class="icon-box bg-rose-400/10 text-rose-400"><i class="fa-solid fa-crosshairs"></i></div>
+            <div>
+                <h2 class="text-2xl font-bold tracking-tight">Automated Endpoint Remediation</h2>
+                <p class="text-sm text-slate-500 mt-0.5">Zero-touch active defense — detect, classify, execute</p>
+            </div>
+        </div>
+        <div class="flex items-stretch gap-5 max-w-5xl w-full mt-5">
+            <!-- Before Panel -->
+            <div class="glass flex-1 overflow-hidden" style="border-color:rgba(239,68,68,0.15)">
+                <div class="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-rose-500/5">
+                    <div class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+                    <span class="text-[0.6rem] font-mono text-rose-400 tracking-wider">INFECTION DETECTED</span>
+                </div>
+                <div class="p-4 font-mono text-[0.65rem] space-y-1.5">
+                    <div class="text-slate-600">PID PROCESS CPU MEM</div>
+                    <div class="text-slate-400">1024 chrome.exe 2.1% 4.2%</div>
+                    <div class="text-slate-400">2048 svchost.exe 0.3% 1.1%</div>
+                    <div class="bg-rose-500/10 border border-rose-500/20 rounded px-1.5 py-0.5 text-rose-400">3072
+                        malware.exe 89.2% 32.1%</div>
+                    <div class="text-slate-400">4096 explorer.exe 1.5% 3.0%</div>
+                    <div class="mt-3 pt-2 border-t border-rose-500/10 text-rose-400/70">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> ANOMALY: PID 3072<br>
+                        <span class="text-slate-500">Score: 94.7 | Status: MALICIOUS</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Arrow -->
+            <div class="flex flex-col items-center justify-center gap-1 flex-shrink-0">
+                <i class="fa-solid fa-arrow-right text-emerald-400/60 text-sm"></i>
+                <span class="text-[0.5rem] font-mono text-emerald-400/40">KILL</span>
+            </div>
+            <!-- After Panel -->
+            <div class="glass flex-1 overflow-hidden glow-em" style="border-color:rgba(16,185,129,0.15)">
+                <div class="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-emerald-500/5">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span class="text-[0.6rem] font-mono text-emerald-400 tracking-wider">REMEDIATION COMPLETE</span>
+                </div>
+                <div class="p-4 font-mono text-[0.65rem] space-y-1.5">
+                    <div class="text-slate-600">PID PROCESS CPU MEM</div>
+                    <div class="text-slate-400">1024 chrome.exe 2.1% 4.2%</div>
+                    <div class="text-slate-400">2048 svchost.exe 0.3% 1.1%</div>
+                    <div class="text-slate-600 line-through opacity-50">3072 [TERMINATED] — —</div>
+                    <div class="text-slate-400">4096 explorer.exe 1.5% 3.0%</div>
+                    <div class="mt-3 pt-2 border-t border-emerald-500/10 text-emerald-400/70">
+                        <i class="fa-solid fa-check mr-1"></i> ACTIONS EXECUTED<br>
+                        <span class="text-slate-500">PID Kill + FW Block + UI Alert</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Capability cards -->
+        <div class="flex items-center gap-4 mt-5 max-w-5xl w-full">
+            <div class="glass px-4 py-3 flex items-center gap-3 flex-1">
+                <div class="icon-box bg-rose-500/10 text-rose-400 text-xs"><i class="fa-solid fa-skull-crossbones"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-semibold">PID Termination</div>
+                    <div class="text-[0.6rem] text-slate-500">os.kill(SIGTERM) with fallback</div>
+                </div>
+            </div>
+            <div class="glass px-4 py-3 flex items-center gap-3 flex-1">
+                <div class="icon-box bg-amber-500/10 text-amber-400 text-xs"><i class="fa-solid fa-ban"></i></div>
+                <div>
+                    <div class="text-xs font-semibold">Firewall IP Block</div>
+                    <div class="text-[0.6rem] text-slate-500">netsh advfirewall rule injection</div>
+                </div>
+            </div>
+            <div class="glass px-4 py-3 flex items-center gap-3 flex-1">
+                <div class="icon-box bg-sky-500/10 text-sky-400 text-xs"><i class="fa-solid fa-message"></i></div>
+                <div>
+                    <div class="text-xs font-semibold">Native UI Alert</div>
+                    <div class="text-[0.6rem] text-slate-500">ctypes MessageBoxW escalation</div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-8 right-[72px] baton">
+            <span>Next: Shashank — Dashboard</span><i class="fa-solid fa-chevron-right"></i></div>
+    </section>
+
+    <!-- ===================== SLIDE 7: SHASHANK ===================== -->
+    <section class="slide" data-slide="6">
+        <div class="absolute top-8 left-[72px] slide-label">07 — Visibility Lead</div>
+        <div class="absolute top-8 right-[72px] slide-label">Shashank</div>
+        <div class="flex items-start gap-3 mb-2">
+            <div class="icon-box bg-amber-400/10 text-amber-400"><i class="fa-solid fa-tv"></i></div>
+            <div>
+                <h2 class="text-2xl font-bold tracking-tight">Central Command: Real-Time Dashboard</h2>
+                <p class="text-sm text-slate-500 mt-0.5">React SPA for SOC-level threat visibility</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-8 max-w-5xl w-full mt-5">
+            <!-- Dashboard Mockup -->
+            <div class="glass-strong flex-1 overflow-hidden" style="border-color:rgba(255,255,255,0.08)">
+                <!-- Browser chrome -->
+                <div class="flex items-center gap-1.5 px-4 py-2 border-b border-white/5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-rose-500/70"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-amber-400/70"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/70"></div>
+                    <span class="text-[0.55rem] font-mono text-slate-600 ml-3">secure-shield.local:3000</span>
+                </div>
+                <!-- Dashboard content -->
+                <div class="p-5 flex items-start gap-5">
+                    <!-- Gauge -->
+                    <div class="text-center flex-shrink-0">
+                        <svg viewBox="0 0 200 125" class="w-44" id="riskGauge">
+                            <defs>
+                                <linearGradient id="gGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#10B981" />
+                                    <stop offset="45%" stop-color="#FBBF24" />
+                                    <stop offset="100%" stop-color="#EF4444" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="rgba(255,255,255,0.04)"
+                                stroke-width="14" stroke-linecap="round" />
+                            <path d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="url(#gGrad)" stroke-width="14"
+                                stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="251" id="gaugeArc" />
+                            <text x="100" y="95" text-anchor="middle" fill="#F1F5F9" font-size="34" font-weight="800"
+                                font-family="Inter" id="gaugeVal">0</text>
+                            <text x="100" y="115" text-anchor="middle" fill="#475569" font-size="9"
+                                font-family="JetBrains Mono" letter-spacing="0.15em">RISK SCORE</text>
+                        </svg>
+                        <div class="badge badge-malicious mt-1 inline-block">
+                            <i class="fa-solid fa-circle-exclamation mr-1 text-[0.55rem]"></i>MALICIOUS</div>
+                    </div>
+                    <!-- Threat list -->
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[0.6rem] font-mono text-slate-600 mb-2 tracking-wider">RECENT THREATS</div>
+                        <div class="space-y-2">
+                            <div
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-500/5 border border-rose-500/10">
+                                <div class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></div>
+                                <span class="text-[0.7rem] text-slate-300 flex-1 truncate">PID 3072 — malware.exe</span>
+                                <span class="text-[0.6rem] font-mono text-rose-400">94.7</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                                <div class="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></div>
+                                <span class="text-[0.7rem] text-slate-300 flex-1 truncate">PID 5120 — suspicious_powershell</span>
+                                <span class="text-[0.6rem] font-mono text-amber-400">71.2</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5">
+                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                                <span class="text-[0.7rem] text-slate-300 flex-1 truncate">PID 2048 — svchost.exe</span>
+                                <span class="text-[0.6rem] font-mono text-emerald-400">12.3</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 mt-3 pt-2 border-t border-white/5">
+                            <div class="text-center">
+                                <div class="text-xs font-bold text-emerald-400">3</div>
+                                <div class="text-[0.5rem] font-mono text-slate-600">AGENTS</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs font-bold text-sky-400">1.2k</div>
+                                <div class="text-[0.5rem] font-mono text-slate-600">EVENTS</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs font-bold text-rose-400">2</div>
+                                <div class="text-[0.5rem] font-mono text-slate-600">THREATS</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Feature list -->
+            <div class="w-56 flex-shrink-0 space-y-3">
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/60"></span><span class="text-xs font-semibold">0-100 Risk Gauge</span>
+                    </div>
+                    <p class="text-[0.65rem] text-slate-500">Anomaly score mapped to intuitive visual scale</p>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/60"></span><span class="text-xs font-semibold">Status Badges</span>
+                    </div>
+                    <p class="text-[0.65rem] text-slate-500">Malicious / Suspicious / Benign classification</p>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/60"></span><span class="text-xs font-semibold">Threat Timeline</span>
+                    </div>
+                    <p class="text-[0.65rem] text-slate-500">Chronological event stream with severity filter</p>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/60"></span><span class="text-xs font-semibold">Agent Health Map</span>
+                    </div>
+                    <p class="text-[0.65rem] text-slate-500">Live connectivity and resource status per endpoint</p>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-8 right-[72px] baton">
+            <span>Next: Vaibhav — Infrastructure</span><i class="fa-solid fa-chevron-right"></i></div>
+    </section>
+
+    <!-- ===================== SLIDE 8: VAIBHAV ===================== -->
+    <section class="slide" data-slide="7">
+        <div class="absolute top-8 left-[72px] slide-label">08 — Infrastructure Lead</div>
+        <div class="absolute top-8 right-[72px] slide-label">Vaibhav</div>
+        <div class="flex items-start gap-3 mb-2">
+            <div class="icon-box bg-violet-400/10 text-violet-400"><i class="fa-solid fa-database"></i></div>
+            <div>
+                <h2 class="text-2xl font-bold tracking-tight">System Resiliency: Dual-Database Strategy</h2>
+                <p class="text-sm text-slate-500 mt-0.5">Full functionality maintained under network partition</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-10 max-w-5xl w-full mt-5">
+            <!-- Diagram -->
+            <div class="flex-1 flex justify-center">
+                <div class="relative" style="width:360px;height:280px">
+                    <!-- Agent (center) -->
+                    <div
+                        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 glass-strong px-5 py-3 text-center glow-neon z-10">
+                        <div class="text-[0.55rem] font-mono text-sky-400/60 mb-0.5">ENDPOINT</div>
+                        <div class="text-xs font-semibold">Python Agent</div>
+                    </div>
+                    <!-- SQLite (left) -->
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2 glass-strong px-4 py-3 text-center w-36 glow-em"
+                        style="border-color:rgba(16,185,129,0.15)">
+                        <div class="icon-box bg-emerald-500/10 text-emerald-400 mx-auto mb-1.5 text-xs">
+                            <i class="fa-solid fa-hard-drive"></i></div>
+                        <div class="text-xs font-semibold text-emerald-400">SQLite</div>
+                        <div class="text-[0.55rem] font-mono text-slate-500 mt-0.5">LOCAL STORAGE</div>
+                        <div class="text-[0.55rem] text-emerald-400/60 mt-1">Always Available</div>
+                    </div>
+                    <!-- MongoDB (right) -->
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 glass-strong px-4 py-3 text-center w-36"
+                        style="border-color:rgba(56,189,248,0.12)">
+                        <div class="icon-box bg-sky-500/10 text-sky-400 mx-auto mb-1.5 text-xs">
+                            <i class="fa-solid fa-cloud"></i></div>
+                        <div class="text-xs font-semibold text-sky-400">MongoDB</div>
+                        <div class="text-[0.55rem] font-mono text-slate-500 mt-0.5">CLOUD STORAGE</div>
+                        <div class="text-[0.55rem] text-sky-400/60 mt-1" id="mongoStatus">Sync Active</div>
+                    </div>
+                    <!-- Line to SQLite (solid) -->
+                    <div class="absolute left-[148px] top-1/2 w-px -translate-y-1/2"
+                        style="height:80px;background:rgba(16,185,129,0.3)"></div>
+                    <div
+                        class="absolute left-[144px] top-[calc(50%-44px)] w-0 h-0 border-r-[5px] border-r-emerald-500/40 border-y-[3px] border-y-transparent">
+                    </div>
+                    <!-- Line to MongoDB (dashed) -->
+                    <div class="absolute right-[148px] top-1/2 w-px -translate-y-1/2"
+                        style="height:80px;border-left:1.5px dashed rgba(56,189,248,0.3)"></div>
+                    <div
+                        class="absolute right-[144px] top-[calc(50%-44px)] w-0 h-0 border-l-[5px] border-l-sky-400/40 border-y-[3px] border-y-transparent">
+                    </div>
+                    <!-- Offline mode indicator -->
+                    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 glass px-3 py-1.5 flex items-center gap-2"
+                        style="border-color:rgba(16,185,129,0.15)">
+                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                        <span class="text-[0.6rem] font-mono text-emerald-400">OFFLINE MODE: FULL CAPABILITY</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Feature list -->
+            <div class="w-56 flex-shrink-0 space-y-3">
+                <div class="glass-strong p-4 glow-em">
+                    <div class="text-[0.6rem] font-mono text-emerald-400/60 mb-1">STRATEGY</div>
+                    <div class="text-xs font-semibold mb-2">Write-Local, Sync-Later</div>
+                    <p class="text-[0.65rem] text-slate-500 leading-relaxed">All telemetry writes to SQLite first. Cloud
+                        sync is a background delta-push — never blocking inference.</p>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400/60"></span><span class="text-xs font-semibold">Conflict Resolution</span>
+                    </div>
+                    <p class="text-[0.65rem] text-slate-500">Timestamp-based last-write-wins on reconnection</p>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400/60"></span><span class="text-xs font-semibold">Delta Sync Protocol</span>
+                    </div>
+                    <p class="text-[0.65rem] text-slate-500">Only changed records transmitted — minimal bandwidth</p>
+                </div>
+                <div class="glass p-3.5">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400/60"></span><span class="text-xs font-semibold">Zero-Config SQLite</span>
+                    </div>
+                    <p class="text-[0.65rem] text-slate-500">Embedded engine — no install, no daemon, no port</p>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-8 right-[72px] baton">
+            <span>Next: Integration Flow</span><i class="fa-solid fa-chevron-right"></i></div>
+    </section>
+
+    <!-- ===================== SLIDE 9: INTEGRATION FLOW ===================== -->
+    <section class="slide" data-slide="8">
+        <div class="absolute top-8 left-[72px] slide-label">09 — Integration</div>
+        <div class="absolute top-8 right-[72px] slide-label">12-Step Loop</div>
+        <h2 class="text-2xl font-bold tracking-tight mb-1">The Complete Data Journey</h2>
+        <p class="text-sm text-slate-500 mb-4">From event trigger to automated kill — a closed remediation loop</p>
+        <div class="relative mx-auto" style="width:520px;height:420px" id="flowCircle">
+            <!-- SVG circle path -->
+            <svg class="absolute inset-0 w-full h-full" viewBox="0 0 520 420">
+                <circle cx="260" cy="210" r="170" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1" />
+                <circle cx="260" cy="210" r="170" fill="none" stroke="rgba(56,189,248,0.15)" stroke-width="1.5"
+                    stroke-dasharray="8 6" class="dash-anim" />
+                <!-- Arrow at top -->
+                <defs>
+                    <marker id="flowArrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                        <path d="M0,0 L6,3 L0,6" fill="rgba(56,189,248,0.4)" />
+                    </marker>
+                </defs>
+                <path d="M 260 40 A 170 170 0 1 1 259 40" fill="none" stroke="none" marker-end="url(#flowArrow)" />
+            </svg>
+            <!-- Center label -->
+            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                <div class="text-xs font-bold text-slate-400">SECURE</div>
+                <div class="text-xs font-bold text-emerald-400">SHIELD</div>
+                <div class="text-[0.5rem] font-mono text-slate-600 mt-0.5">LOOP</div>
+            </div>
+            <!-- Nodes positioned by JS -->
+        </div>
+        <!-- Legend -->
+        <div class="flex items-center gap-6 mt-1">
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-sky-400/60"></div>
+                <span class="text-[0.6rem] font-mono text-slate-500">Sheebu — Collection</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400/60"></div>
+                <span class="text-[0.6rem] font-mono text-slate-500">Tushar — Inference</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-amber-400/60"></div>
+                <span class="text-[0.6rem] font-mono text-slate-500">Shashank — Visibility</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-rose-400/60"></div>
+                <span class="text-[0.6rem] font-mono text-slate-500">Raghav — Remediation</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== SLIDE 10: PERFORMANCE ===================== -->
+    <section class="slide" data-slide="9">
+        <div class="absolute top-8 left-[72px] slide-label">10 — Performance</div>
+        <div class="absolute top-8 right-[72px] slide-label">Benchmarks</div>
+        <h2 class="text-2xl font-bold tracking-tight mb-1">Resource Efficiency Comparison</h2>
+        <p class="text-sm text-slate-500 mb-8">Secure Shield delivers enterprise-grade protection at a fraction of the cost</p>
+        <div class="flex items-end gap-6 max-w-3xl w-full" style="height:260px">
+            <!-- Y axis labels -->
+            <div class="flex flex-col justify-between h-full text-[0.6rem] font-mono text-slate-600 pr-2 flex-shrink-0">
+                <span>20%</span><span>15%</span><span>10%</span><span>5%</span><span>0%</span>
+            </div>
+            <!-- Chart area -->
+            <div class="flex-1 relative h-full border-l border-b border-white/5">
+                <!-- Grid lines -->
+                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                    <div class="border-b border-white/[0.03] w-full"></div>
+                    <div class="border-b border-white/[0.03] w-full"></div>
+                    <div class="border-b border-white/[0.03] w-full"></div>
+                    <div class="border-b border-white/[0.03] w-full"></div>
+                    <div class="border-b border-white/[0.03] w-full"></div>
+                </div>
+                <!-- Bars -->
+                <div class="absolute inset-0 flex items-end justify-around px-4">
+                    <div class="flex flex-col items-center gap-2 w-16">
+                        <span class="text-xs font-bold text-emerald-400">1.8%</span>
+                        <div class="perf-bar w-full bg-gradient-to-t from-emerald-500/60 to-emerald-400/80"
+                            data-height="9" style="box-shadow:0 0 20px rgba(16,185,129,0.15); height: 0px; min-height: 0px;"></div>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 w-16">
+                        <span class="text-xs font-bold text-sky-400">5.6%</span>
+                        <div class="perf-bar w-full bg-gradient-to-t from-sky-500/40 to-sky-400/60" data-height="28" style="height: 0px; min-height: 0px;"></div>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 w-16">
+                        <span class="text-xs font-bold text-sky-400">7.8%</span>
+                        <div class="perf-bar w-full bg-gradient-to-t from-sky-500/40 to-sky-400/60" data-height="39" style="height: 0px; min-height: 0px;"></div>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 w-16">
+                        <span class="text-xs font-bold text-slate-400">11.4%</span>
+                        <div class="perf-bar w-full bg-gradient-to-t from-slate-500/30 to-slate-400/50"
+                            data-height="57" style="height: 0px; min-height: 0px;"></div>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 w-16">
+                        <span class="text-xs font-bold text-slate-500">15.2%</span>
+                        <div class="perf-bar w-full bg-gradient-to-t from-slate-500/20 to-slate-400/30"
+                            data-height="76" style="height: 0px; min-height: 0px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- X axis labels -->
+        <div class="flex items-center gap-6 max-w-3xl w-full mt-3">
+            <div class="w-12 flex-shrink-0"></div>
+            <div class="flex-1 flex justify-around px-4">
+                <span class="text-[0.65rem] font-mono text-emerald-400 text-center w-16">Secure<br>Shield</span>
+                <span class="text-[0.65rem] font-mono text-slate-500 text-center w-16">Crowd<br>Strike</span>
+                <span class="text-[0.65rem] font-mono text-slate-500 text-center w-16">Sentinel<br>One</span>
+                <span class="text-[0.65rem] font-mono text-slate-500 text-center w-16">Traditional<br>AV</span>
+                <span class="text-[0.65rem] font-mono text-slate-500 text-center w-16">Legacy<br>EDR</span>
+            </div>
+        </div>
+        <div class="absolute bottom-8 right-[72px] baton">
+            <span>Next: Future Roadmap</span><i class="fa-solid fa-chevron-right"></i></div>
+    </section>
+
+    <!-- ===================== SLIDE 11: ROADMAP ===================== -->
+    <section class="slide" data-slide="10">
+        <div class="absolute top-8 left-[72px] slide-label">11 — Roadmap</div>
+        <div class="absolute top-8 right-[72px] slide-label">What's Next</div>
+        <h2 class="text-2xl font-bold tracking-tight mb-1">Future Development Phases</h2>
+        <p class="text-sm text-slate-500 mb-8">Scaling from proof-of-concept to production-grade endpoint platform</p>
+        <div class="flex items-stretch gap-5 max-w-4xl w-full">
+            <!-- Phase 1 -->
+            <div class="glass-strong flex-1 p-6 relative overflow-hidden" style="border-color:rgba(56,189,248,0.12)">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-sky-400/60 to-transparent"></div>
+                <div class="flex items-center gap-3 mb-4">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-sky-400/10 flex items-center justify-center text-sky-400 text-sm font-bold font-mono">
+                        01</div>
+                    <span class="text-[0.55rem] font-mono text-sky-400/60 tracking-wider">KERNEL LEVEL</span>
+                </div>
+                <h3 class="text-sm font-bold mb-2">Windows Mini-Filter Driver</h3>
+                <p class="text-[0.7rem] text-slate-500 leading-relaxed mb-4">File system-level interception via
+                    kernel-mode minifilter. Catches file I/O operations before userland execution — enabling true
+                    pre-execution blocking.</p>
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                        <i class="fa-solid fa-microchip text-sky-400/50 text-[0.55rem]"></i>IRP pre/post callback hooks
+                    </div>
+                    <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                        <i class="fa-solid fa-microchip text-sky-400/50 text-[0.55rem]"></i>WDM driver signing required
+                    </div>
+                    <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                        <i class="fa-solid fa-microchip text-sky-400/50 text-[0.55rem]"></i>Zero userland bypass possible
+                    </div>
+                </div>
+            </div>
+            <!-- Phase 2 -->
+            <div class="glass-strong flex-1 p-6 relative overflow-hidden" style="border-color:rgba(16,185,129,0.12)">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-400/60 to-transparent">
+                </div>
+                <div class="flex items-center gap-3 mb-4">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-emerald-400/10 flex items-center justify-center text-emerald-400 text-sm font-bold font-mono">
+                        02</div>
+                    <span class="text-[0.55rem] font-mono text-emerald-400/60 tracking-wider">REAL-TIME</span>
+                </div>
+                <h3 class="text-sm font-bold mb-2">WebSocket Streaming</h3>
+                <p class="text-[0.7rem] text-slate-500 leading-relaxed mb-4">Replace REST polling with persistent
+                    bidirectional channels. Sub-second event propagation from endpoint to dashboard — true real-time SOC
+                    visibility.</p>
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                        <i class="fa-solid fa-bolt text-emerald-400/50 text-[0.55rem]"></i>&lt;100ms event-to-UI latency
+                    </div>
+                    <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                        <i class="fa-solid fa-bolt text-emerald-400/50 text-[0.55rem]"></i>Binary framing for efficiency
+                    </div>
+                    <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                        <i class="fa-solid fa-bolt text-emerald-400/50 text-[0.55rem]"></i>Auto-reconnect with backoff
+                    </div>
+                </div>
+            </div>
+            <!-- Phase 3 -->
+            <div class="glass-strong flex-1 p-6 relative overflow-hidden" style="border-color:rgba(251,191,36,0.12)">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-400/60 to-transparent"></div>
+                <div class="flex items-center gap-3 mb-4">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center text-amber-400 text-sm font-bold font-mono">
+                        03</div>
+                    <span class="text-[0.55rem] font-mono text-amber-400/60 tracking-wider">SCALE</span>
+                </div>
+                <h3 class="text-sm font-bold mb-2">Multi-Tenant Fleet Management</h3>
+                <p class="text-[0.7rem] text-slate-500 leading-relaxed mb-4">Organization-level isolation with
+                    role-based access. Support 1000+ concurrent endpoints with horizontal API scaling and policy
+                    inheritance.</p>
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                        <i class="fa-solid fa-layer-group text-amber-400/50 text-[0.55rem]"></i>Org-scoped policy trees
+                    </div>
+                    <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                        <i class="fa-solid fa-layer-group text-amber-400/50 text-[0.55rem]"></i>RBAC for SOC analysts
+                    </div>
+                    <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                        <i class="fa-solid fa-layer-group text-amber-400/50 text-[0.55rem]"></i>GPO-based deployment
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-8 right-[72px] baton">
+            <span>Next: Conclusion</span><i class="fa-solid fa-chevron-right"></i></div>
+    </section>
+
+    <!-- ===================== SLIDE 12: CONCLUSION ===================== -->
+    <section class="slide" data-slide="11">
+        <div class="absolute top-8 left-[72px] slide-label">12 — Conclusion</div>
+        <div class="absolute top-8 right-[72px] slide-label">Q&A</div>
+        <!-- Decorative shield -->
+        <div class="absolute opacity-[0.025] pointer-events-none"
+            style="top:50%;left:50%;transform:translate(-50%,-50%);width:440px;height:440px;">
+            <svg viewBox="0 0 200 220" fill="none">
+                <path d="M100 10 L185 55 L185 130 Q185 190 100 215 Q15 190 15 130 L15 55 Z" stroke="#10B981"
+                    stroke-width="0.5" />
+            </svg>
+        </div>
+        <div class="text-center relative z-10">
+            <div class="flex items-center justify-center gap-3 mb-5">
+                <div class="w-8 h-px bg-gradient-to-r from-transparent to-emerald-500/50"></div>
+                <span class="slide-label" style="color:var(--em)">Closing the Security Loop</span>
+                <div class="w-8 h-px bg-gradient-to-l from-transparent to-emerald-500/50"></div>
+            </div>
+            <h2 class="text-5xl font-black tracking-tight leading-none mb-3" style="letter-spacing:-0.03em">SECURE
+                <span class="text-emerald-400">SHIELD</span></h2>
+            <p class="text-base font-light text-slate-400 max-w-lg mx-auto mb-10 leading-relaxed">A privacy-first,
+                lightweight hybrid endpoint protection platform — proving that autonomous defense does not require
+                invasive surveillance.</p>
+            <div class="flex items-center justify-center gap-6 flex-wrap mb-10">
+                <div class="glass px-5 py-3 text-center">
+                    <div class="text-lg font-bold text-emerald-400">&lt;2%</div>
+                    <div class="text-[0.6rem] font-mono text-slate-500 mt-0.5">CPU USAGE</div>
+                </div>
+                <div class="glass px-5 py-3 text-center">
+                    <div class="text-lg font-bold text-sky-400">&lt;50ms</div>
+                    <div class="text-[0.6rem] font-mono text-slate-500 mt-0.5">INFERENCE</div>
+                </div>
+                <div class="glass px-5 py-3 text-center">
+                    <div class="text-lg font-bold text-amber-400">100%</div>
+                    <div class="text-[0.6rem] font-mono text-slate-500 mt-0.5">OFFLINE CAPABLE</div>
+                </div>
+                <div class="glass px-5 py-3 text-center">
+                    <div class="text-lg font-bold text-rose-400">0</div>
+                    <div class="text-[0.6rem] font-mono text-slate-500 mt-0.5">RAW DATA LEAKED</div>
+                </div>
+            </div>
+            <div class="w-12 h-px bg-white/10 mx-auto mb-6"></div>
+            <p class="text-sm text-slate-500 mb-1">Thank You</p>
+            <div class="flex items-center justify-center gap-1 flex-wrap text-sm text-slate-400">
+                <span class="font-medium">Sheebu</span><span class="text-slate-600 mx-1.5">&middot;</span>
+                <span class="font-medium">Tushar</span><span class="text-slate-600 mx-1.5">&middot;</span>
+                <span class="font-medium">Raghav</span><span class="text-slate-600 mx-1.5">&middot;</span>
+                <span class="font-medium">Shashank</span><span class="text-slate-600 mx-1.5">&middot;</span>
+                <span class="font-medium">Vaibhav</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== NAVIGATION ===================== -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-50 glass px-4 py-2.5"
+        style="border-radius:24px">
+        <button id="prevBtn" class="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors" aria-label="Previous slide">
+        <i class="fa-solid fa-chevron-left text-xs"></i>
+    </button>
+        <div id="dots" class="flex items-center gap-1.5 mx-2"></div>
+        <button id="nextBtn" class="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors" aria-label="Next slide">
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+    </button>
+        <div class="w-px h-4 bg-white/10 mx-1"></div>
+        <span id="slideNum" class="text-[0.6rem] font-mono text-slate-600 w-8 text-center">1/12</span>
+    </div>
+
+    <!-- Keyboard hint -->
+    <div id="keyHint"
+        class="fixed bottom-[72px] left-1/2 -translate-x-1/2 z-50 text-[0.55rem] font-mono text-slate-700 transition-opacity duration-500">
+        Arrow keys to navigate</div>
+
+    <script>
+
+
+
+
+
+
+
+        /* ========== PARTICLE BACKGROUND ========== */
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+    constructor() { this.reset(); }
+    reset() {
+        this.x = Math.random() * W;
+        this.y = Math.random() * H;
+        this.vx = (Math.random() - 0.5) * 0.25;
+        this.vy = (Math.random() - 0.5) * 0.25;
+        this.r = Math.random() * 1.2 + 0.3;
+        this.alpha = Math.random() * 0.25 + 0.05;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > W) this.vx *= -1;
+        if (this.y < 0 || this.y > H) this.vy *= -1;
+    }
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, Math.max(0.1, this.r), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(56,189,248,${this.alpha})`;
+        ctx.fill();
+    }
+}
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pCount = reducedMotion ? 0 : 60;
+for (let i = 0; i < pCount; i++) particles.push(new Particle());
+
+function drawLines() {
+    for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < 140) {
+                ctx.beginPath();
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(particles[j].x, particles[j].y);
+                ctx.strokeStyle = `rgba(56,189,248,${0.04 * (1 - d / 140)})`;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+        }
+    }
+}
+
+function animateParticles() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => { p.update(); p.draw(); });
+    drawLines();
+    requestAnimationFrame(animateParticles);
+}
+if (!reducedMotion) animateParticles();
+
+/* ========== SLIDE NAVIGATION ========== */
+const slides = document.querySelectorAll('.slide');
+const totalSlides = slides.length;
+let current = 0;
+let transitioning = false;
+
+// Create dots
+const dotsContainer = document.getElementById('dots');
+for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    dot.setAttribute('aria-label', `Slide ${i + 1}`);
+    dotsContainer.appendChild(dot);
+}
+
+function goTo(index) {
+    if (transitioning || index === current || index < 0 || index >= totalSlides) return;
+    transitioning = true;
+    slides[current].classList.remove('active');
+    current = index;
+    slides[current].classList.add('active');
+    // Update dots
+    dotsContainer.querySelectorAll('.nav-dot').forEach((d, i) => {
+        d.classList.toggle('active', i === current);
+    });
+    // Update progress
+    document.getElementById('progress').style.width = ((current + 1) / totalSlides * 100) + '%';
+    // Update counter
+    document.getElementById('slideNum').textContent = `${current + 1}/${totalSlides}`;
+    // Trigger slide-specific animations
+    onSlideEnter(current);
+    setTimeout(() => { transitioning = false; }, 560);
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => goTo(current - 1));
+document.getElementById('nextBtn').addEventListener('click', () => goTo(current + 1));
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goTo(current - 1); }
+});
+
+// Touch swipe support
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? goTo(current + 1) : goTo(current - 1); }
+}, { passive: true });
+
+// Hide keyboard hint after first navigation
+const keyHint = document.getElementById('keyHint');
+function hideHint() {
+    if (keyHint) { keyHint.style.opacity = '0'; setTimeout(() => keyHint.remove(), 500); }
+    document.removeEventListener('keydown', hideHint);
+    document.getElementById('nextBtn').removeEventListener('click', hideHint);
+}
+document.addEventListener('keydown', hideHint);
+document.getElementById('nextBtn').addEventListener('click', hideHint);
+
+/* ========== SLIDE-SPECIFIC ANIMATIONS ========== */
+let gaugeAnimated = false;
+let barsAnimated = false;
+
+function onSlideEnter(index) {
+    // Slide 7: Shashank — Animate gauge
+    if (index === 6 && !gaugeAnimated) {
+        gaugeAnimated = true;
+        animateGauge();
+    }
+    // Slide 10: Performance — Animate bars
+    if (index === 9 && !barsAnimated) {
+        barsAnimated = true;
+        animateBars();
+    }
+}
+
+function animateGauge() {
+    const arc = document.getElementById('gaugeArc');
+    const val = document.getElementById('gaugeVal');
+    if (!arc || !val) return;
+    const targetScore = 87;
+    // Arc total length is ~251, we want to fill ~87%
+    const targetOffset = 251 - (251 * targetScore / 100);
+    let currentVal = 0;
+    const duration = 1500;
+    const start = performance.now();
+
+    function step(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        currentVal = Math.round(eased * targetScore);
+        val.textContent = currentVal;
+        arc.setAttribute('stroke-dashoffset', 251 - (251 * (eased * targetScore / 100)));
+        if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+}
+
+function animateBars() {
+    const bars = document.querySelectorAll('.perf-bar');
+    const maxHeight = 260; // Container height in pixels
+    bars.forEach((bar, i) => {
+        // Get the actual percentage value from the text label
+        const valueText = bar.previousElementSibling.innerText;
+        const value = parseFloat(valueText.replace('%', ''));
+        // Convert percentage to pixel height (max value is 20%)
+        const pixelHeight = (value / 20) * maxHeight;
+        
+        // Set minimum visible height immediately for testing
+        bar.style.minHeight = '2px';
+        bar.style.backgroundColor = 'rgba(16, 185, 129, 0.8)';
+        
+        setTimeout(() => {
+            bar.style.height = pixelHeight + 'px';
+        }, i * 120);
+    });
+}
+
+/* ========== INTEGRATION FLOW CIRCLE (Slide 9) ========== */
+const flowSteps = [
+    { label: '1', sub: 'Event Log', color: 'sky' },
+    { label: '2', sub: 'psutil Pull', color: 'sky' },
+    { label: '3', sub: 'Privacy Strip', color: 'sky' },
+    { label: '4', sub: 'Feature Vec', color: 'sky' },
+    { label: '5', sub: 'IsoForest', color: 'em' },
+    { label: '6', sub: 'Score Calc', color: 'em' },
+    { label: '7', sub: 'Threshold', color: 'em' },
+    { label: '8', sub: 'DB Write', color: 'amber' },
+    { label: '9', sub: 'API Push', color: 'amber' },
+    { label: '10', sub: 'Dashboard', color: 'amber' },
+    { label: '11', sub: 'PID Kill', color: 'rose' },
+    { label: '12', sub: 'FW Block', color: 'rose' }
+];
+
+const colorMap = {
+    sky: { bg: 'rgba(56,189,248,0.08)', border: 'rgba(56,189,248,0.25)', text: '#38BDF8', dot: 'rgba(56,189,248,0.5)' },
+    em: { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.25)', text: '#10B981', dot: 'rgba(16,185,129,0.5)' },
+    amber: { bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.25)', text: '#FBBF24', dot: 'rgba(251,191,36,0.5)' },
+    rose: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)', text: '#EF4444', dot: 'rgba(239,68,68,0.5)' }
+};
+
+(function buildFlowCircle() {
+    const container = document.getElementById('flowCircle');
+    if (!container) return;
+    const cx = 260, cy = 210, r = 170;
+    const startAngle = -Math.PI / 2;
+
+    flowSteps.forEach((step, i) => {
+        const angle = startAngle + (i / 12) * Math.PI * 2;
+        const x = cx + r * Math.cos(angle);
+        const y = cy + r * Math.sin(angle);
+        const c = colorMap[step.color];
+
+        const node = document.createElement('div');
+        node.style.cssText = `
+            position:absolute;
+            left:${x}px;top:${y}px;
+            transform:translate(-50%,-50%);
+            background:${c.bg};
+            border:1px solid ${c.border};
+            border-radius:8px;
+            padding:4px 8px;
+            text-align:center;
+            backdrop-filter:blur(8px);
+            white-space:nowrap;
+        `;
+        node.innerHTML = `
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;font-weight:700;color:${c.text}">${step.label}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:0.48rem;color:${c.dot};letter-spacing:0.04em;margin-top:1px">${step.sub}</div>
+        `;
+        container.appendChild(node);
+    });
+})();
+
+/* ========== BADGE STYLES ========== */
+(function injectBadgeStyles() {
+    const s = document.createElement('style');
+    s.textContent = `
+        .badge-malicious{background:rgba(239,68,68,0.12);color:#EF4444;border:1px solid rgba(239,68,68,0.2)}
+    `;
+    document.head.appendChild(s);
+})();
+    </script>
+</body>
+
+</html>
